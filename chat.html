@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatter App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        #chat-container {
+            max-width: 600px;
+            margin: auto;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+
+        #message-input {
+            width: 70%; /* Adjust the width as needed */
+            padding: 10px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            font-size: 16px;
+            display: inline-block;
+        }
+
+        #send-message {
+            width: 25%; /* Adjust the width as needed */
+            background-color: #4CAF50;
+            color: #fff;
+            border: none;
+            padding: 10px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        #send-message:hover {
+            background-color: #45a049;
+        }
+
+        .profile-image {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .message-text {
+            display: inline-block;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="chat-container">
+        <div id="message-list">
+            <!-- list will contain messages -->
+            <div id="typing-indicator"></div>
+        </div>
+        <input type="text" id="message-input" placeholder="Type your message...">
+        <button id="send-message">Send</button>
+    </div>
+    <div id="user-count">Users Online: 1</div>
+
+
+    <script src="http://localhost:3200/socket.io/socket.io.js"></script>
+
+
+<script>
+    const username = prompt('Enter your name');
+    const socket = io.connect('http://localhost:3200');
+    // emit the username to the server
+    socket.emit("join", username);
+
+    const messageInput = document.getElementById("message-input");
+    const messageList = document.getElementById("message-list");
+    const sendButton = document.getElementById("send-message");
+    const profileImage = document.createElement("img");
+
+    profileImage.src = "https://static.vecteezy.com/system/resources/previews/005/544/718/non_2x/profile-icon-design-free-vector.jpg";
+    profileImage.alt = "Profile Image";
+    profileImage.className = "profile-image";
+    const userCountElement = document.getElementById('user-count');
+
+
+
+    const typingIndicator = document.getElementById("typing-indicator");
+
+socket.on('typing_status', (data) => {
+    if (data.typing) {
+        typingIndicator.innerText = `${data.username} is typing...`;
+    } else {
+        typingIndicator.innerText = '';
+    }
+});
+
+    sendButton.addEventListener('click', function () {
+        const message = messageInput.value;
+        if (message) {
+            socket.emit('new_message', message);
+
+            const messageContainer = document.createElement("div");
+            messageContainer.className = "message-container";
+
+            const messageElement = document.createElement("div");
+            messageElement.innerText = username + ": " + message;
+            messageElement.className = "message-text";
+            messageContainer.appendChild(profileImage.cloneNode(true)); // Clone the profile image
+            messageContainer.appendChild(messageElement);
+            messageList.appendChild(messageContainer);
+
+            messageInput.value = '';
+        }
+    });
+
+    
+
+    socket.on('load_messages', (messages) => {
+        messages.forEach((message) => {
+            const messageContainer = document.createElement("div");
+            messageContainer.className = "message-container";
+
+            const messageElement = document.createElement("div");
+            messageElement.innerText = message.username + ": " + message.message;
+            messageElement.className = "message-text";
+            messageContainer.appendChild(profileImage.cloneNode(true)); // Clone the profile image
+            messageContainer.appendChild(messageElement);
+            messageList.appendChild(messageContainer);
+        });
+    });
+
+    socket.on('broadcast_message', (userMessage) => {
+        const messageContainer = document.createElement("div");
+        messageContainer.className = "message-container";
+
+        const messageElement = document.createElement("div");
+        messageElement.innerText = userMessage.username + ": " + userMessage.message;
+        messageElement.className = "message-text";
+        messageContainer.appendChild(profileImage.cloneNode(true)); // Clone the profile image
+        messageContainer.appendChild(messageElement);
+        messageList.appendChild(messageContainer);
+    });
+
+    socket.on('user_count', (count) => {
+        userCountElement.innerText = `Users Online: ${count}`;
+    });
+</script>
+
+
+</body>
+
+</html>
